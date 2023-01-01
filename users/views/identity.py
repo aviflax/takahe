@@ -1,4 +1,5 @@
 import string
+from typing import Literal
 
 from django import forms
 from django.contrib.auth.decorators import login_required
@@ -96,9 +97,10 @@ class ViewIdentity(ListView):
 @method_decorator(
     cache_page("cache_timeout_identity_feed", public_only=True), name="__call__"
 )
-class IdentityFeed(Feed):
+class LocalFeed(Feed):
     """
-    Serves a local user's Public posts as an RSS feed
+    Serves local posts or timelines as RSS feeds.
+    Please subclass and implement at least title, description, link, and items.
     """
 
     def get_object(self, request, handle):
@@ -109,16 +111,16 @@ class IdentityFeed(Feed):
         )
 
     def title(self, identity: Identity):
-        return identity.name
+        raise NotImplementedError
 
     def description(self, identity: Identity):
-        return f"Public posts from @{identity.handle}"
+        raise NotImplementedError
 
     def link(self, identity: Identity):
-        return identity.absolute_profile_uri()
+        raise NotImplementedError
 
     def items(self, identity: Identity):
-        return TimelineService(None).identity_public(identity)[:20]
+        raise NotImplementedError
 
     def item_description(self, item: Post):
         return item.safe_content_remote()
@@ -140,6 +142,71 @@ class IdentityFeed(Feed):
             mime_type=attachment.mimetype,
         )
         return [enc]
+
+
+@method_decorator(
+    cache_page("cache_timeout_identity_feed", public_only=True), name="__call__"
+)
+class IdentityFeed(LocalFeed):
+    """
+    Serves a local user's Public posts as an RSS feed
+    """
+
+    def title(self, identity: Identity):
+        return identity.name
+
+    def description(self, identity: Identity):
+        return f"Public posts from @{identity.handle}"
+
+    def link(self, identity: Identity):
+        return identity.absolute_profile_uri()
+
+    def items(self, identity: Identity):
+        return TimelineService(None).identity_public(identity)[:20]
+
+
+TimelineFeedType = Literal["home", "local", "federated"]
+
+
+@method_decorator(
+    cache_page("cache_timeout_identity_timeline_feed", public_only=True),
+    name="__call__",
+)
+class TimelineFeed(Feed):
+    """
+    Serves a local user's timeline as an RSS feed, *IF* they have their follows set to visible.
+    """
+
+    def __init__(self, feed_type: TimelineFeedType):
+        self.feed_type = feed_type
+
+    def title(self, identity: Identity):
+        if not Config.load_identity(identity).timeline_feeds:
+            raise Http404("Timeline feeds not available")
+        return f"{self.feed_type.capitalize()} timeline for @{identity.name}"
+
+    def description(self, identity: Identity):
+        if not Config.load_identity(identity).timeline_feeds:
+            raise Http404("Timeline feeds not available")
+        return f"{self.feed_type.capitalize()} timeline for @{identity.handle}"
+
+    def link(self, identity: Identity):
+        if not Config.load_identity(identity).timeline_feeds:
+            raise Http404("Timeline feeds not available")
+        return identity.absolute_profile_uri()
+
+    def items(self, identity: Identity):
+        if not Config.load_identity(identity).timeline_feeds:
+            raise Http404("Timeline feeds not available")
+        match self.feed_type:
+            case "home":
+                return TimelineService(identity).home()[:250]
+            case "local":
+                return TimelineService(identity).local()[:250]
+            case "federated":
+                return TimelineService(identity).federated()[:250]
+            case _:
+                raise Http404("Unknown feed type")
 
 
 class IdentityFollows(ListView):

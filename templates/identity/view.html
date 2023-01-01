@@ -8,7 +8,13 @@
 
 {% block extra_head %}
     {% if identity.local %}
-        <link rel="alternate" type="application/rss+xml" title="RSS feed for {{ identity.name }}" href="rss/" />
+        <link rel="alternate" type="application/rss+xml" title="RSS feed: public posts by {{ identity.name }}" href="rss/" />
+    {% endif %}
+
+    {% if identity.local and identity.config_identity.timeline_feeds %}
+        <link rel="alternate" type="application/rss+xml" title="RSS feed: home timeline for {{ identity.name }}" href="rss/timeline/home/" />
+        <link rel="alternate" type="application/rss+xml" title="RSS feed: local timeline for {{ identity.name }}" href="rss/timeline/local/" />
+        <link rel="alternate" type="application/rss+xml" title="RSS feed: federated timeline for {{ identity.name }}" href="rss/timeline/federated/" />
     {% endif %}
 {% endblock %}
 

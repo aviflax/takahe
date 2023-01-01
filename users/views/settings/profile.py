@@ -47,6 +47,11 @@ class ProfilePage(FormView):
             widget=forms.Select(choices=[(True, "Visible"), (False, "Hidden")]),
             required=False,
         )
+        timeline_feeds = forms.BooleanField(
+            help_text="Whether or not to make RSS feeds for your timelines available.",
+            widget=forms.Select(choices=[(True, "Available"), (False, "Unavailable")]),
+            required=False,
+        )
         metadata = forms.JSONField(
             label="Profile Metadata Fields",
             help_text="These values will appear on your profile below your Bio",

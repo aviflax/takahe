@@ -16,7 +16,7 @@ Currently, it supports:
 * Post visibilities, including a local-only option
 * A home timeline, a local timeline, and a federated timeline
 * Profile pages with bios, icons, and header images
-* RSS feeds for users' public posts
+* RSS feeds for users' public posts and timelines
 * Hashtag linking and searching
 * Emoji fetching and display, and limited admin creation
 * Searching for users by exact handle

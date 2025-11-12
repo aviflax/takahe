@@ -266,6 +266,17 @@ class Inbox(View):
         InboxMessage.objects.create(message=document)
         return HttpResponse(status=202)
 
+### START HACK
+avi_move_activity = {
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "B172790C-B70E-4602-BE11-C0AA4D545269",
+  "published": "2025-11-12T12:52:00T-05:00",
+  "type": "Move",
+  "actor": "https://flaximus.net/@avi@flaximus.net/",
+  "object": "https://flaximus.net/@avi@flaximus.net/",
+  "target": "https://fedi.aviflax.dev/users/avi",
+}
+### END HACK
 
 class Outbox(View):
     """
@@ -284,12 +295,17 @@ class Outbox(View):
             raise Http404("Not a local identity")
         # Return an ordered collection with the most recent 10 public posts
         posts = list(self.identity.posts.not_hidden().public()[:10])
+        
+        ### START HACK
+        activities = [avi_move_activity] + [post.to_ap() for post in posts]
+        ### END HACK
+        
         return JsonResponse(
             canonicalise(
                 {
                     "type": "OrderedCollection",
-                    "totalItems": len(posts),
-                    "orderedItems": [post.to_ap() for post in posts],
+                    "totalItems": len(activities),
+                    "orderedItems": activities,
                 }
             ),
             content_type="application/activity+json",

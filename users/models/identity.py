@@ -581,6 +581,7 @@ class Identity(StatorModel):
 
         self.ensure_uris()
         response = {
+            "movedTo": "https://fedi.aviflax.dev/users/avi",            
             "id": self.actor_uri,
             "type": self.actor_type.title(),
             "inbox": self.inbox_uri,
